@@ -56,7 +56,7 @@ class Chat implements MessageComponentInterface {
 				$user_id = $data->user_id;
 				$chat_msg = $data->chat_msg;
 				$response_from = "<div style='color:#999'><strong>$user_id: </strong>$chat_msg</div>";
-				$response_to = "<div style='color:#4c4c4c'><strong>$user_id: </strong>:$chat_msg</div>";
+				$response_to = "<div style='color:#4c4c4c'><strong>$user_id: </strong>$chat_msg</div>";
 				// Output
 				$from->send(json_encode(array("type"=>$type,"msg"=>$response_from)));
 				foreach($this->clients as $client)
