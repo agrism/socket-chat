@@ -1,6 +1,6 @@
 <?php
+
 return [
-//    'url' => 'socket-chat.test',
-    'url' => $_SERVER['HTTP_HOST'],
+    'url' => $_SERVER['HTTP_HOST'] ?? null,
     'port' => '8080',
 ];

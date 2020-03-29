@@ -6,24 +6,41 @@ use Ratchet\ConnectionInterface;
 use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
-require_once '../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
-$config = include '../config.php';
+$config = include __DIR__.'/../config.php';
 
 class Chat implements MessageComponentInterface {
 	protected $clients;
 	protected $users;
 	protected $config;
+	protected $storageFile = 'history.txt';
+    protected $fileToWrite;
 
 	public function __construct() {
 		$this->clients = new \SplObjectStorage;
-		$this->config = include '../config.php';
+		$this->config = include __DIR__.'/../config.php';
+        $this->storageFile = __DIR__.$this->storageFile;
 	}
 
-	public function onOpen(ConnectionInterface $conn) {
-		$this->clients->attach($conn);
-		// $this->users[$conn->resourceId] = $conn;
-	}
+	public function __destruct()
+    {
+//        fclose($this->fileToWrite);
+    }
+
+    public function onOpen(ConnectionInterface $conn)
+    {
+        $this->clients->attach($conn);
+
+        // $this->users[$conn->resourceId] = $conn;
+
+        $content = file_get_contents($this->storageFile);
+        $type = 'chat';
+        $response_to = $content;
+        foreach (explode('</div>', $content) as $msg){
+            $conn->send(json_encode(array("type"=>$type,"msg"=>$msg)));
+        }
+    }
 
 	public function onClose(ConnectionInterface $conn) {
 		$this->clients->detach($conn);
@@ -38,8 +55,8 @@ class Chat implements MessageComponentInterface {
 			case 'chat':
 				$user_id = $data->user_id;
 				$chat_msg = $data->chat_msg;
-				$response_from = "<span style='color:#999'><b>".$user_id.":</b> ".$chat_msg."</span><br><br>";
-				$response_to = "<b>".$user_id."</b>: ".$chat_msg."<br><br>";
+				$response_from = "<div style='color:#999'><strong>$user_id: </strong>$chat_msg</div>";
+				$response_to = "<div style='color:#4c4c4c'><strong>$user_id: </strong>:$chat_msg</div>";
 				// Output
 				$from->send(json_encode(array("type"=>$type,"msg"=>$response_from)));
 				foreach($this->clients as $client)
@@ -49,6 +66,11 @@ class Chat implements MessageComponentInterface {
 						$client->send(json_encode(array("type"=>$type,"msg"=>$response_to)));
 					}
 				}
+
+                $txt = $response_to;
+                $this->fileToWrite = fopen($this->storageFile, "a") or die("Unable to open file!");
+                fwrite($this->fileToWrite, $txt);
+
 				break;
 		}
 	}
